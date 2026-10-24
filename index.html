@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EEF1F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1322" media="(prefers-color-scheme: dark)">
+<title>Balderdash Pad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one column read like a dictionary page. The headword leads every screen, the numbered "senses" are the answers, the scoreboard sits underneath. */
+:root{
+  --paper:#EEF1F6; --card:#FFFFFF; --ink:#141B2E; --muted:#596379; --line:#D4DAE5; --soft:#E4E9F5;
+  --accent:#2B3FD0; --accent-ink:#FFFFFF; --hi:#FFD54A; --hi-ink:#2A2100; --good:#177A4F; --warn:#A6490F;
+  --f-display:'Gloock','Iowan Old Style',Georgia,serif;
+  --f-body:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --r:14px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --paper:#0D1322; --card:#151D31; --ink:#E7EBF4; --muted:#97A1B7; --line:#28324B; --soft:#1C2640;
+  --accent:#95A5FF; --accent-ink:#0D1322; --hi:#F7CC3E; --hi-ink:#231B00; --good:#4CC28B; --warn:#F0A066; color-scheme:dark}}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+button,input,textarea{font:inherit;color:inherit}
+[hidden]{display:none!important}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+img,svg{max-width:100%}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top-in{max-width:600px;margin:0 auto;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-size:20px;letter-spacing:.01em;white-space:nowrap;background:none;border:0;padding:0;cursor:pointer}
+.brand b{font-weight:400;color:var(--accent)}
+.status{margin-left:auto;font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;margin-right:4px}
+.dot.off{background:var(--warn)}
+
+.wrap{max-width:600px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+#main{display:flex;flex-direction:column;gap:20px}
+.banner{background:var(--soft);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;font-size:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.banner p{margin:0;flex:1 1 220px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:400}
+.headword{font-family:var(--f-display);font-size:clamp(34px,9vw,52px);line-height:1.05;overflow-wrap:anywhere}
+.hw{display:flex;flex-direction:column;gap:6px}
+.ask{margin:0;color:var(--muted);font-size:15px}
+.pron{font-family:var(--f-mono);font-size:14px;color:var(--muted);margin:0}
+.pron i{font-family:var(--f-display);font-style:italic;color:var(--ink)}
+.lead{margin:0;font-size:17px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+p{margin:0}
+
+label.lbl,.lbl{font-weight:600;font-size:14px;display:block;margin-bottom:6px}
+.field{display:flex;flex-direction:column;gap:4px}
+input[type=text],textarea{width:100%;background:var(--paper);border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;font-size:17px;line-height:1.4}
+textarea{min-height:110px;resize:vertical}
+input[type=text]:focus,textarea:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+#codeIn{font-family:var(--f-mono);text-transform:uppercase;letter-spacing:.3em;font-size:22px;text-align:center}
+.count{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:right}
+
+.btn{appearance:none;border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:16px;padding:13px 22px;min-height:48px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center;text-decoration:none}
+.btn:hover{filter:brightness(1.07)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.small{min-height:36px;padding:6px 14px;font-size:14px}
+.btn.wide{width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.or{display:flex;align-items:center;gap:12px;color:var(--muted);font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:14px;background:var(--card)}
+.chip.ok{border-color:color-mix(in srgb,var(--good) 55%,var(--line));color:var(--good)}
+.chip.wait{color:var(--muted);border-style:dashed}
+label.chip{cursor:pointer;min-height:36px}
+.tag{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--soft);color:var(--muted);white-space:nowrap}
+.tag.real{background:var(--hi);color:var(--hi-ink)}
+
+.cats{display:flex;flex-wrap:wrap;gap:8px;border:0;padding:0;margin:0}
+.cats legend{font-weight:600;font-size:14px;margin-bottom:6px;padding:0}
+.cats label{position:relative}
+.cats input{position:absolute;opacity:0;pointer-events:none}
+.cats span{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;padding:7px 14px;font-size:15px;cursor:pointer;background:var(--card)}
+.cats input:checked+span{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.cats input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+
+ol.senses{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+ol.senses>li{display:grid;grid-template-columns:2.2em 1fr;gap:4px 10px;align-items:start;min-width:0}
+.num{font-family:var(--f-display);font-size:24px;line-height:1.1;color:var(--accent);text-align:right}
+.stext{font-size:17px;min-width:0;overflow-wrap:anywhere}
+.meta{grid-column:2;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px;color:var(--muted)}
+.mark{background:linear-gradient(176deg,transparent 8%,var(--hi) 10%,var(--hi) 88%,transparent 92%);color:var(--hi-ink);padding:1px 4px;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{appearance:none;width:100%;text-align:left;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:14px;display:grid;grid-template-columns:2em 1fr auto;gap:10px;align-items:start;cursor:pointer;min-width:0}
+.opt .stext{font-size:16px}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--card));box-shadow:0 0 0 1px var(--accent) inset}
+.opt:disabled{cursor:not-allowed;opacity:.6}
+.opt .pick{font-family:var(--f-mono);font-size:12px;color:var(--accent);white-space:nowrap}
+
+.mine{background:var(--paper);border:1px dashed var(--line);border-radius:12px;padding:14px;font-size:17px;overflow-wrap:anywhere}
+.big-note{font-family:var(--f-display);font-size:26px;line-height:1.15}
+.toggle{display:inline-flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;border:1.5px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--card);min-height:32px}
+.toggle[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
+
+.join{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.code{font-family:var(--f-mono);font-size:clamp(40px,12vw,56px);letter-spacing:.18em;line-height:1;font-weight:500}
+.qr{width:132px;height:132px;background:#fff;border-radius:10px;padding:8px;display:grid;place-items:center}
+.qr svg,.qr img{width:100%;height:100%;display:block}
+.linkbox{font-family:var(--f-mono);font-size:13px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow-wrap:anywhere;user-select:all}
+@media (max-width:420px){.join{grid-template-columns:1fr}.qr{justify-self:start}}
+
+.board{display:flex;flex-direction:column;gap:10px}
+.board h3{font-family:var(--f-display);font-size:24px}
+table.sc{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+table.sc td{padding:10px 4px;border-top:1px solid var(--line);vertical-align:middle}
+table.sc tr:first-child td{border-top:0}
+td.rk{font-family:var(--f-mono);font-size:13px;color:var(--muted);width:2em}
+td.nm{font-weight:600;overflow-wrap:anywhere}
+td.nm .tag{margin-left:6px;vertical-align:2px}
+td.pt{font-family:var(--f-mono);font-size:20px;text-align:right;width:3em}
+td.dl{font-family:var(--f-mono);font-size:13px;color:var(--good);text-align:right;width:3em}
+tr.away td.nm{color:var(--muted);font-weight:500}
+.tools{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.tools>div{width:100%}
+.trow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)}
+.trow:first-child{border-top:0}
+.trow .nm{flex:1 1 120px;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.foot{text-align:center;font-size:14px;color:var(--muted)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);z-index:20;box-shadow:0 6px 24px rgb(0 0 0 / .25)}
+.steps{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px}
+@media (prefers-reduced-motion:no-preference){.card{animation:rise .25s ease-out}@keyframes rise{from{transform:translateY(6px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><button class="brand" data-act="home" aria-label="Balderdash Pad home">Balderdash <b>Pad</b></button><span class="status" id="status"></span></div></header>
+<div class="wrap">
+  <div id="banner"></div>
+  <main id="main"><section class="card"><p class="muted">Loading…</p></section></main>
+  <section id="board"></section>
+  <p class="foot" id="foot"></p>
+</div>
+<div id="toast" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js" async></script>
+<script>
+(() => {
+'use strict';
+/* The Firebase Realtime Database this pad uses. */
+const DEFAULT_DB = 'https://balderdash-pad-default-rtdb.firebaseio.com';
+const DB = (new URLSearchParams(location.search).get('db') || DEFAULT_DB).replace(/\/+$/, '');
+
+const MAXLEN = 180, NAMELEN = 20, ONLINE_MS = 60000, BEAT_MS = 20000;
+const CATS = {
+  word:     {label:'Word',     ask:'What does it mean?',                   ph:'The word on the card',     real:'The real definition'},
+  person:   {label:'Person',   ask:'Who is this, and why are they known?', ph:'The name on the card',     real:'Who they really are'},
+  initials: {label:'Initials', ask:'What do the initials stand for?',      ph:'The initials on the card', real:'What they really stand for'},
+  movie:    {label:'Movie',    ask:'What is the movie about?',             ph:'The title on the card',    real:'The real plot'},
+  law:      {label:'Law',      ask:'Finish the law.',                      ph:'The start of the law',     real:'How the law really ends'},
+};
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
+const ALPHA = 'abcdefghijkmnpqrstuvwxyz23456789';
+const rid = n => { let s = ''; for (const x of crypto.getRandomValues(new Uint8Array(n))) s += ALPHA[x % ALPHA.length]; return s; };
+const CODE_ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+const newCode = () => { let s = ''; for (const x of crypto.getRandomValues(new Uint8Array(4))) s += CODE_ALPHA[x % CODE_ALPHA.length]; return s; };
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3600); }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* ---------- identity ---------- */
+let me = LS.get('bd.me', null);
+if (!me || typeof me.pid !== 'string') me = { pid: rid(10), name: '' };
+LS.set('bd.me', me);
+let editingName = false;
+
+/* ---------- game connection ---------- */
+const codeFromUrl = () => { const h = location.hash.replace('#', '').toUpperCase(); return /^[A-Z]{4}$/.test(h) ? h : null; };
+let code = codeFromUrl();
+let tree = undefined;          // undefined = loading, null = game not found
+let es = null, live = false, skew = 0, beatT = null;
+
+function setAt(root, path, val) {
+  const segs = path.split('/').filter(Boolean);
+  if (!segs.length) return val;
+  const top = root && typeof root === 'object' ? { ...root } : {};
+  let cur = top; const stack = [];
+  for (let i = 0; i < segs.length - 1; i++) {
+    const k = segs[i];
+    const next = cur[k] && typeof cur[k] === 'object' ? { ...cur[k] } : {};
+    cur[k] = next; stack.push([cur, k]); cur = next;
+  }
+  const last = segs[segs.length - 1];
+  if (val === null || val === undefined) {
+    delete cur[last];
+    for (let i = stack.length - 1; i >= 0; i--) { const [p, k] = stack[i]; if (Object.keys(p[k]).length === 0) delete p[k]; else break; }
+  } else cur[last] = val;
+  return Object.keys(top).length ? top : null;
+}
+function connect() {
+  if (es) { es.close(); es = null; }
+  clearInterval(beatT); tree = undefined; live = false;
+  if (!code) { render(); return; }
+  es = new EventSource(`${DB}/games/${code}.json`);
+  es.addEventListener('put', e => { const m = JSON.parse(e.data); tree = setAt(tree === undefined ? null : tree, m.path, m.data); onData(); });
+  es.addEventListener('patch', e => { const m = JSON.parse(e.data); let t = tree || null; for (const [k, v] of Object.entries(m.data || {})) t = setAt(t, m.path.replace(/\/$/, '') + '/' + k, v); tree = t; onData(); });
+  es.addEventListener('cancel', () => { toast('The database refused the connection. Check its rules.'); });
+  es.onopen = () => { live = true; render(); };
+  es.onerror = () => { live = false; render(); };
+  beatT = setInterval(beat, BEAT_MS);
+}
+let joinedOnce = false;
+function onData() {
+  if (tree && me.name && !joinedOnce) {
+    joinedOnce = true;
+    const pl = tree.pl && tree.pl[me.pid];
+    if (!pl || pl.n !== me.name) write('PATCH', `pl/${me.pid}`, { n: me.name, j: pl && pl.j ? pl.j : { '.sv': 'timestamp' } });
+    beat();
+  }
+  const mine = tree && tree.on && tree.on[me.pid];
+  if (typeof mine === 'number' && beatSentAt) { skew = mine - beatSentAt; beatSentAt = 0; }
+  render();
+}
+let beatSentAt = 0;
+function beat() { if (!code || !me.name || !tree) return; beatSentAt = Date.now(); write('PUT', `on/${me.pid}`, { '.sv': 'timestamp' }, true); }
+async function write(method, path, body, quiet) {
+  // optimistic local apply (server values are left to the echo)
+  if (tree && !(body && typeof body === 'object' && '.sv' in body)) {
+    if (method === 'PUT' || method === 'DELETE') tree = setAt(tree, path, method === 'DELETE' ? null : body);
+    else if (method === 'PATCH') for (const [k, v] of Object.entries(body)) { if (!(v && typeof v === 'object' && '.sv' in v)) tree = setAt(tree, path + '/' + k, v); }
+    render();
+  }
+  try {
+    const r = await fetch(`${DB}/games/${code}${path ? '/' + path : ''}.json`, { method, body: method === 'DELETE' ? undefined : JSON.stringify(body) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+  } catch (e) { if (!quiet) toast("That didn't save. Check your connection and try again."); }
+}
+window.addEventListener('pagehide', () => { if (code && me.name) { try { fetch(`${DB}/games/${code}/on/${me.pid}.json`, { method: 'DELETE', keepalive: true }); } catch {} } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { if (es && es.readyState === 2) connect(); else beat(); keepAwake(); } });
+window.addEventListener('hashchange', () => { const c = codeFromUrl(); if (c !== code) { code = c; joinedOnce = false; connect(); } });
+
+/* ---------- derived state ---------- */
+let S = null;
+const rk = n => 'r' + n;
+function derive() {
+  const t = tree || {};
+  const ep = Number.isInteger(t.ep) ? t.ep : 1;
+  const E = (t.e && t.e['x' + ep]) || {};
+  const now = Date.now() + skew;
+  const on = t.on || {};
+  const online = new Set(Object.entries(on).filter(([, ts]) => typeof ts === 'number' && now - ts < ONLINE_MS).map(([p]) => p));
+  if (me.name) online.add(me.pid);
+  const players = Object.entries(t.pl || {}).filter(([, v]) => v && typeof v.n === 'string')
+    .map(([pid, v]) => ({ pid, name: str(v.n, NAMELEN), j: typeof v.j === 'number' ? v.j : Infinity }))
+    .sort((a, b) => a.j - b.j || (a.pid < b.pid ? -1 : 1));
+  const rounds = E.rd || {};
+  let n = 0; for (const k of Object.keys(rounds)) { const x = +k.slice(1); if (x > n) n = x; }
+  const R = n ? normRound(rounds[rk(n)]) : null;
+  const sb = (E.sb && E.sb[rk(n)]) || {};
+  const vo = (E.vo && E.vo[rk(n)]) || {};
+  const sc = {}; for (const p of players) sc[p.pid] = 0;
+  let last = null;
+  for (const [k, r0] of Object.entries(rounds)) {
+    const r = normRound(r0); if (r.ph !== 'reveal') continue;
+    const pts = scoreRound(r);
+    for (const [p, v] of Object.entries(pts)) sc[p] = (sc[p] || 0) + v;
+    const rn = +k.slice(1); if (!last || rn > last.n) last = { n: rn, pts };
+  }
+  for (const [p, v] of Object.entries(E.adj || {})) if (typeof v === 'number') sc[p] = (sc[p] || 0) + v;
+  return { ep, E, n, R, sb, vo, sc, last, players, online, adj: E.adj || {} };
+}
+function normRound(r) {
+  r = r && typeof r === 'object' ? r : {};
+  const en = Object.entries(r.en && typeof r.en === 'object' ? r.en : {})
+    .filter(([, e]) => e && typeof e.t === 'string' && typeof e.p === 'string')
+    .map(([id, e]) => ({ id, t: str(e.t, MAXLEN), p: e.p, i: +e.i || 0 })).sort((a, b) => a.i - b.i);
+  return { dz: str(r.dz, 24), ph: str(r.ph, 10) || 'setup', cat: CATS[r.cat] ? r.cat : 'word', w: str(r.w, 80), real: str(r.real, MAXLEN),
+    en, ok: r.ok && typeof r.ok === 'object' ? r.ok : {}, vt: r.vt && typeof r.vt === 'object' ? r.vt : {} };
+}
+function scoreRound(r) {
+  const pts = {}; const add = (p, v) => { if (!p || p === '*') return; pts[p] = (pts[p] || 0) + v; };
+  const byId = Object.fromEntries(r.en.map(e => [e.id, e]));
+  for (const p of Object.keys(r.ok)) if (r.ok[p]) add(p, 3);
+  let voters = 0, right = 0;
+  for (const [voter, eid] of Object.entries(r.vt)) {
+    if (voter === r.dz || r.ok[voter]) continue;
+    const e = byId[eid]; if (!e) continue;
+    voters++;
+    if (e.p === '*') { add(voter, 2); right++; } else if (e.p !== voter) add(e.p, 1);
+  }
+  if (voters > 0 && right === 0) add(r.dz, 3);
+  return pts;
+}
+const voteable = r => r.en.filter(e => !r.ok[e.p]);
+const ownEntry = (r, pid) => { const e = r.en.find(x => x.p === pid); return e ? e.id : null; };
+function nameOf(pid) {
+  if (pid === me.pid) return me.name || 'You';
+  const p = S.players.find(x => x.pid === pid);
+  return (p && p.name) || 'Someone';
+}
+function nextDasher(cur) {
+  const ord = S.players.map(p => p.pid); if (!ord.length) return me.pid;
+  const i = ord.indexOf(cur);
+  for (let k = 1; k <= ord.length; k++) { const c = ord[(i + k + ord.length) % ord.length]; if (S.online.has(c)) return c; }
+  return ord[(i + 1 + ord.length) % ord.length];
+}
+const base = () => `e/x${S.ep}`;
+const rPath = n => `${base()}/rd/${rk(n)}`;
+
+/* ---------- views ---------- */
+let curKey = null;
+function headword(R) {
+  const c = CATS[R.cat] || CATS.word;
+  return `<div class="hw"><p class="eyebrow">${esc(c.label)} · Round ${S.n}</p><h2 class="headword">${esc(R.w) || '…'}</h2><p class="ask">${esc(c.ask)}</p></div>`;
+}
+function progress(have, label) {
+  const want = new Set([...S.players.map(p => p.pid).filter(p => S.online.has(p)), ...have]);
+  want.delete(S.R.dz);
+  const list = [...want]; const n = list.filter(p => have.includes(p)).length;
+  const chips = list.map(p => have.includes(p) ? `<span class="chip ok">✓ ${esc(nameOf(p))}</span>` : `<span class="chip wait">${esc(nameOf(p))}</span>`).join('');
+  return `<p class="eyebrow">${n} of ${list.length} ${label}</p><div class="chips">${chips || '<span class="muted small">Nobody else is here yet.</span>'}</div>`;
+}
+const subsIn = () => Object.entries(S.sb).filter(([p, t]) => p !== S.R.dz && typeof t === 'string' && t.trim()).map(([p]) => p);
+function votesIn() { const ids = new Set(voteable(S.R).map(e => e.id)); return Object.entries(S.vo).filter(([p, e]) => ids.has(e) && !S.R.ok[p] && p !== S.R.dz).map(([p]) => p); }
+function catPicker(sel) {
+  return `<fieldset class="cats"><legend>Card category</legend>${Object.entries(CATS).map(([k, c]) =>
+    `<label><input type="radio" name="cat" value="${k}" ${k === sel ? 'checked' : ''}><span>${esc(c.label)}</span></label>`).join('')}</fieldset>`;
+}
+function sensesList(R, withVotes) {
+  return `<ol class="senses">${voteable(R).map((e, i) => {
+    const isReal = e.p === '*';
+    let meta = '';
+    if (withVotes) {
+      const vs = Object.entries(R.vt).filter(([, x]) => x === e.id).map(([v]) => nameOf(v));
+      meta = isReal
+        ? `<span class="tag real">Real answer</span><span>${vs.length ? 'found by ' + esc(vs.join(', ')) : 'nobody found it'}</span>`
+        : `<span>by <strong>${esc(nameOf(e.p))}</strong></span><span>· ${vs.length ? 'fooled ' + esc(vs.join(', ')) : 'no votes'}</span>`;
+    }
+    const text = esc(e.t);
+    return `<li><span class="num">${i + 1}</span><span class="stext">${isReal && withVotes ? `<span class="mark">${text}</span>` : text}</span>${meta ? `<span class="meta">${meta}</span>` : ''}</li>`;
+  }).join('')}</ol>`;
+}
+const shareUrl = () => `${location.origin}${location.pathname}${location.search}#${code}`;
+
+function view() {
+  if (!me.name || editingName) return vName();
+  if (!code) return vHome();
+  if (tree === undefined) return { key: 'loading', html: `<section class="card"><h2 class="big-note">Finding game ${esc(code)}…</h2><p class="muted">If this takes more than a few seconds, check your connection.</p></section>` };
+  if (tree === null || !tree.c) return { key: 'missing', html: `<section class="card"><h2 class="big-note">No game with code ${esc(code)}.</h2><p>Check the code with whoever started the game.</p><button class="btn" data-act="home">Back</button></section>` };
+  if (!S.n) return vLobby();
+  const R = S.R;
+  if (R.dz === me.pid) {
+    if (R.ph === 'setup') return vDashSetup(R);
+    if (R.ph === 'write') return vDashWrite(R);
+    if (R.ph === 'review') return vDashReview(R);
+    if (R.ph === 'vote') return vDashVote(R);
+    return vResults(R);
+  }
+  if (R.ph === 'setup') return vWaitDasher(R);
+  if (R.ph === 'write') return vWrite(R);
+  if (R.ph === 'review') return { key: 'rwait' + S.n, html: `<section class="card"><div data-slot="hw"></div><h2 class="big-note" data-slot="t"></h2><div data-slot="mine"></div></section>`,
+    slots: { hw: headword(R), t: `${esc(nameOf(R.dz))} is shuffling and checking the answers.`, mine: S.sb[me.pid] ? `<p class="eyebrow">Your bluff</p><div class="mine">${esc(S.sb[me.pid])}</div>` : '' } };
+  if (R.ph === 'vote') return vVote(R);
+  return vResults(R);
+}
+
+function vName() {
+  return { key: 'name' + (editingName ? 'e' : ''), html: `
+    <section class="card">
+      <div class="hw"><p class="eyebrow">Table companion</p><h1 class="headword">bal·der·dash</h1><p class="pron">/ˈbɔːl.dər.dæʃ/ <i>noun</i></p></div>
+      <ol class="senses">
+        <li><span class="num">1</span><span class="stext">Senseless talk or writing; nonsense.</span></li>
+        <li><span class="num">2</span><span class="stext">This pad. Everyone writes their bluffs on their phone instead of on paper.</span></li>
+      </ol>
+    </section>
+    <form class="card" id="nameForm">
+      <div class="field"><label class="lbl" for="nameIn">Your name at the table</label>
+      <input type="text" id="nameIn" maxlength="${NAMELEN}" autocomplete="nickname" placeholder="e.g. Jordan" value="${esc(me.name)}"></div>
+      <button class="btn wide" type="submit">${editingName ? 'Save name' : code ? `Join game ${esc(code)}` : 'Continue'}</button>
+    </form>
+    ${editingName ? '' : `<section class="card"><p class="eyebrow">How a round works</p><ol class="steps">
+      <li>The dasher draws a card and types the word and the real answer.</li>
+      <li>Everyone else writes a convincing fake on their own phone.</li>
+      <li>All answers appear shuffled and numbered on every screen. The dasher reads them aloud.</li>
+      <li>Everyone votes. The reveal shows who wrote what, who fell for it, and the points.</li></ol>
+      <p class="muted small">Scoring: 2 for picking the real answer, 1 for each vote your bluff gets, 3 for an answer close enough to the real one, and 3 to the dasher if nobody finds it.</p></section>`}` };
+}
+function vHome() {
+  return { key: 'home', html: `
+    <section class="card">
+      <p class="eyebrow">Hi, ${esc(me.name)}</p>
+      <h2 class="big-note">Start a game, or join one.</h2>
+      <button class="btn wide" data-act="create">Start a new game</button>
+      <p class="or">or</p>
+      <form id="codeForm" class="field"><label class="lbl" for="codeIn">Game code</label>
+        <div class="row"><input type="text" id="codeIn" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" style="flex:1 1 140px">
+        <button class="btn ghost" type="submit">Join</button></div></form>
+    </section>` };
+}
+function vLobby() {
+  const here = S.players.filter(p => S.online.has(p.pid));
+  const sel = firstSel && here.some(p => p.pid === firstSel) ? firstSel : (here[0] && here[0].pid);
+  return { key: 'lobby', html: `
+    <section class="card">
+      <p class="eyebrow">Game code</p>
+      <div class="join"><div style="display:flex;flex-direction:column;gap:10px;min-width:0"><span class="code">${esc(code)}</span>
+        <p class="small muted">Everyone opens this link or scans the code, then enters a name.</p>
+        <div class="linkbox" id="link">${esc(shareUrl())}</div>
+        <div class="row"><button class="btn ghost small" data-act="copy">Copy link</button></div></div>
+        <div class="qr" id="qr" aria-label="QR code for the game link" hidden></div></div>
+    </section>
+    <section class="card">
+      <div><p class="lbl">Who's the first dasher?</p><div class="chips" data-slot="first"></div></div>
+      <button class="btn wide" data-act="start">Start round 1</button>
+      <p class="small muted">Anyone at the table can start. New players can join any time.</p>
+    </section>`,
+    slots: { first: here.map(p => `<label class="chip"><input type="radio" name="first" value="${esc(p.pid)}" ${p.pid === sel ? 'checked' : ''}> ${esc(p.pid === me.pid ? p.name + ' (you)' : p.name)}</label>`).join('') },
+    after: drawQR };
+}
+function drawQR() {
+  const el = $('#qr'); if (!el || el.dataset.done) return;
+  if (typeof window.qrcode !== 'function') { setTimeout(drawQR, 500); return; }
+  try { const q = window.qrcode(0, 'M'); q.addData(shareUrl()); q.make(); el.innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); el.hidden = false; el.dataset.done = '1'; } catch {}
+}
+function vDashSetup(R) {
+  const d = LS.get('bd.dsetup', { cat: 'word', w: '', real: '' });
+  return { key: 'dsetup' + S.ep + ':' + S.n, html: `
+    <form class="card" id="setupForm">
+      <p class="eyebrow">Round ${S.n} · You're the dasher</p>
+      <h2 class="big-note">Draw a card.</h2>
+      ${catPicker(d.cat)}
+      <div class="field"><label class="lbl" for="sWord">What's on the front</label>
+        <input type="text" id="sWord" maxlength="80" placeholder="${esc((CATS[d.cat] || CATS.word).ph)}" value="${esc(d.w)}"></div>
+      <div class="field"><label class="lbl" for="sReal">The real answer <span class="muted">(you can add it while they write)</span></label>
+        <textarea id="sReal" maxlength="${MAXLEN}" placeholder="${esc((CATS[d.cat] || CATS.word).real)}">${esc(d.real)}</textarea></div>
+      <button class="btn wide" type="submit">Show it to everyone</button>
+    </form>` };
+}
+function vDashWrite(R) {
+  const inn = subsIn(); const hasReal = !!R.real.trim();
+  return { key: 'dwrite' + S.ep + ':' + S.n, html: `
+    <section class="card">
+      <p class="eyebrow">Round ${S.n} · You're the dasher</p>
+      ${catPicker(R.cat)}
+      <div class="field"><label class="lbl" for="dWord">On the card</label><input type="text" id="dWord" maxlength="80" value="${esc(R.w)}"></div>
+      <div class="field"><label class="lbl" for="dReal">The real answer</label>
+        <textarea id="dReal" maxlength="${MAXLEN}" placeholder="${esc((CATS[R.cat] || CATS.word).real)}">${esc(R.real)}</textarea>
+        <span class="count" id="dRealCount">${R.real.length}/${MAXLEN}</span></div>
+    </section>
+    <section class="card"><div data-slot="prog"></div><div data-slot="btn"></div></section>`,
+    slots: { prog: progress(inn, 'answers in'),
+      btn: `<button class="btn wide" data-act="collect" ${inn.length && hasReal ? '' : 'disabled'}>Shuffle the ${inn.length + 1} answers</button>${hasReal ? '' : '<p class="muted small" style="margin-top:8px">Type the real answer to continue.</p>'}` } };
+}
+function vDashReview(R) {
+  const rows = R.en.map(e => {
+    const isReal = e.p === '*', on = !!R.ok[e.p];
+    return `<li><span class="num">·</span><span class="stext">${esc(e.t)}</span><span class="meta">${isReal ? '<span class="tag real">Real answer</span>'
+      : `<span>by ${esc(nameOf(e.p))}</span><button class="toggle" data-act="ok" data-pid="${esc(e.p)}" aria-pressed="${on}">${on ? '✓ Close enough · +3' : 'Close enough?'}</button>`}</span></li>`;
+  }).join('');
+  return { key: 'dreview' + S.ep + ':' + S.n, html: `
+    <section class="card"><div data-slot="hw"></div>
+      <p>Check for anyone who basically got it right. Their answer comes out of the vote and they score 3.</p>
+      <ol class="senses" data-slot="rows"></ol>
+      <div class="row"><button class="btn" data-act="openVote">Open voting</button><button class="btn ghost" data-act="backWrite">Back to writing</button></div>
+    </section>`, slots: { hw: headword(R), rows } };
+}
+function vDashVote(R) {
+  return { key: 'dvote' + S.ep + ':' + S.n, html: `
+    <section class="card"><div data-slot="hw"></div><p class="lead">Read these aloud, in order. Keep a straight face.</p><div data-slot="list"></div></section>
+    <section class="card"><div data-slot="prog"></div><button class="btn wide" data-act="reveal">Reveal the answer</button></section>`,
+    slots: { hw: headword(R), list: sensesList(R, false), prog: progress(votesIn(), 'votes in') } };
+}
+function vWaitDasher(R) {
+  const on = S.online.has(R.dz);
+  return { key: 'waitd' + S.ep + ':' + S.n, html: `
+    <section class="card"><p class="eyebrow">Round ${S.n}</p><h2 class="big-note" data-slot="t"></h2><p class="muted" data-slot="s"></p><div data-slot="b"></div></section>`,
+    slots: { t: on ? `${esc(nameOf(R.dz))} is drawing a card.` : `${esc(nameOf(R.dz))} seems to be away.`,
+      s: on ? 'The word will show up here.' : 'You can wait for them, or pass the dasher role to the next player.',
+      b: on ? '' : `<button class="btn ghost" data-act="skip">Skip to ${esc(nameOf(nextDasher(R.dz)))}</button>` } };
+}
+function vWrite(R) {
+  const mine = typeof S.sb[me.pid] === 'string' ? S.sb[me.pid] : '';
+  if (mine && !editingBluff) {
+    return { key: 'wdone' + S.ep + ':' + S.n, html: `
+      <section class="card"><div data-slot="hw"></div><p class="eyebrow">Your bluff is in</p><div class="mine" data-slot="mine"></div>
+        <button class="btn ghost" data-act="editBluff">Change it</button></section>
+      <section class="card"><div data-slot="prog"></div></section>`,
+      slots: { hw: headword(R), mine: esc(mine), prog: progress(subsIn(), 'answers in') } };
+  }
+  const dr = LS.get('bd.draft', null);
+  const draft = mine || (dr && dr.k === code + S.ep + ':' + S.n ? dr.t : '');
+  return { key: 'write' + S.ep + ':' + S.n + editingBluff, html: `
+    <section class="card"><div data-slot="hw"></div>
+      <div class="field"><label class="lbl" for="bluff">Your bluff</label>
+        <textarea id="bluff" maxlength="${MAXLEN}" placeholder="Write something that sounds real">${esc(draft)}</textarea>
+        <span class="count" id="bluffCount">${draft.length}/${MAXLEN}</span></div>
+      <button class="btn wide" data-act="submitBluff">Submit</button>
+    </section>
+    <section class="card"><div data-slot="prog"></div></section>`,
+    slots: { hw: headword(R), prog: progress(subsIn(), 'answers in') } };
+}
+function vVote(R) {
+  if (R.ok[me.pid]) return { key: 'vok' + S.ep + ':' + S.n, html: `<section class="card"><div data-slot="hw"></div>
+      <h2 class="big-note">You got it right. +3 this round.</h2><p class="muted">Your answer was pulled from the vote. Sit back while the others guess.</p><div data-slot="list"></div></section>`,
+      slots: { hw: headword(R), list: sensesList(R, false) } };
+  const my = S.vo[me.pid]; const own = ownEntry(R, me.pid);
+  const opts = voteable(R).map((e, i) => {
+    const mineE = e.id === own, sel = e.id === my;
+    return `<button class="opt" data-act="vote" data-e="${esc(e.id)}" aria-pressed="${sel}" ${mineE ? 'disabled' : ''}>
+      <span class="num">${i + 1}</span><span class="stext">${esc(e.t)}</span><span class="pick">${mineE ? 'Yours' : sel ? '✓ Your pick' : ''}</span></button>`;
+  }).join('');
+  return { key: 'vote' + S.ep + ':' + S.n, html: `
+    <section class="card"><div data-slot="hw"></div>
+      <p>${esc(nameOf(R.dz))} reads them aloud. Tap the one you think is real. You can change your pick until the reveal.</p>
+      <div class="opts" data-slot="opts"></div></section>
+    <section class="card"><div data-slot="prog"></div></section>`,
+    slots: { hw: headword(R), opts, prog: progress(votesIn(), 'votes in') } };
+}
+function vResults(R) {
+  const pts = scoreRound(R);
+  const ptsHtml = Object.entries(pts).sort((a, b) => b[1] - a[1]).map(([p, v]) => `<span class="chip ok">+${v} ${esc(nameOf(p))}</span>`).join('') || '<span class="muted small">No points this round.</span>';
+  const okE = R.en.filter(e => R.ok[e.p]);
+  const okHtml = okE.length ? `<div><p class="eyebrow">Close enough to count</p><ol class="senses">${okE.map(e =>
+    `<li><span class="num">✓</span><span class="stext">${esc(e.t)}</span><span class="meta"><span>by ${esc(nameOf(e.p))} · +3</span></span></li>`).join('')}</ol></div>` : '';
+  const nx = nextDasher(R.dz);
+  const canNext = R.dz === me.pid || !S.online.has(R.dz);
+  const act = canNext ? `<button class="btn wide" data-act="next">Next round · ${esc(nameOf(nx))} deals</button>` : `<p class="muted">${esc(nameOf(R.dz))} starts the next round.</p>`;
+  return { key: 'res' + S.ep + ':' + S.n, html: `
+    <section class="card"><div data-slot="hw"></div><div data-slot="list"></div><div data-slot="ok"></div></section>
+    <section class="card"><p class="eyebrow">This round</p><div class="chips" data-slot="pts"></div><div data-slot="act"></div></section>`,
+    slots: { hw: headword(R), list: sensesList(R, true), ok: okHtml, pts: ptsHtml, act } };
+}
+
+/* ---------- render ---------- */
+function setSlot(el, html) { if (el.__h !== html) { el.innerHTML = html; el.__h = html; } }
+function render() {
+  S = derive();
+  const v = view(); const main = $('#main');
+  if (v.key !== curKey) { main.innerHTML = v.html; curKey = v.key; }
+  if (v.slots) for (const [k, h] of Object.entries(v.slots)) { const el = main.querySelector(`[data-slot="${k}"]`); if (el) setSlot(el, h); }
+  if (v.after) v.after();
+  const inGame = code && tree && tree.c && me.name && !editingName;
+  let st = '';
+  if (code && me.name) st += `<span><span class="dot ${live ? '' : 'off'}"></span>${live ? S.online.size + ' here' : 'Reconnecting'}</span><span>Game ${esc(code)}</span>`;
+  if (inGame && S.n) st += `<span>Round ${S.n}</span>`;
+  setSlot($('#status'), st);
+  renderBoard(inGame);
+  setSlot($('#foot'), me.name && !editingName ? `Playing as <strong>${esc(me.name)}</strong> · <button class="linkbtn" data-act="rename">Change name</button>${code ? ' · <button class="linkbtn" data-act="home">Leave game</button>' : ''}` : '');
+}
+let toolsOpen = false, confirmNew = false, firstSel = null, editingBluff = false;
+function renderBoard(inGame) {
+  if (!inGame || !S.players.length) { setSlot($('#board'), ''); return; }
+  const rows = S.players.map(p => ({ p: p.pid, s: S.sc[p.pid] || 0 })).sort((a, b) => b.s - a.s);
+  const showDelta = S.last && S.last.n >= S.n - 1;
+  let rank = 0, prev = null;
+  const tr = rows.map((x, i) => {
+    if (x.s !== prev) { rank = i + 1; prev = x.s; }
+    const d = showDelta && S.last.pts[x.p] ? `+${S.last.pts[x.p]}` : '';
+    const tags = (x.p === me.pid ? '<span class="tag">you</span>' : '') + (S.n && S.R && x.p === S.R.dz ? '<span class="tag">dasher</span>' : '') + (S.online.has(x.p) ? '' : '<span class="tag">away</span>');
+    return `<tr class="${S.online.has(x.p) ? '' : 'away'}"><td class="rk">${rank}</td><td class="nm">${esc(nameOf(x.p))}${tags}</td><td class="dl">${d}</td><td class="pt">${x.s}</td></tr>`;
+  }).join('');
+  let tools = `<div class="tools"><button class="linkbtn" data-act="tools">${toolsOpen ? 'Hide table tools' : 'Table tools'}</button>`;
+  if (toolsOpen) {
+    tools += `<div>${S.players.map(p => `<div class="trow"><span class="nm">${esc(nameOf(p.pid))}</span>
+      <button class="btn ghost small" data-act="adj" data-pid="${esc(p.pid)}" data-n="-1" aria-label="Take a point from ${esc(nameOf(p.pid))}">−1</button>
+      <button class="btn ghost small" data-act="adj" data-pid="${esc(p.pid)}" data-n="1" aria-label="Give a point to ${esc(nameOf(p.pid))}">+1</button>
+      ${S.n && S.R && p.pid !== S.R.dz ? `<button class="btn ghost small" data-act="mkDasher" data-pid="${esc(p.pid)}">Make dasher</button>` : ''}
+      ${!S.online.has(p.pid) ? `<button class="btn ghost small" data-act="remove" data-pid="${esc(p.pid)}">Remove</button>` : ''}</div>`).join('')}</div>
+      <div class="row">${S.n ? '<button class="btn ghost small" data-act="skip">Skip to next dasher</button>' : ''}
+      <button class="btn ghost small" data-act="newGame">${confirmNew ? 'Tap again to reset all scores' : 'New game, same players'}</button></div>`;
+  }
+  tools += '</div>';
+  setSlot($('#board'), `<section class="card board"><h3>Scores</h3><div style="overflow-x:auto"><table class="sc"><tbody>${tr}</tbody></table></div>${tools}</section>`);
+}
+
+/* ---------- actions ---------- */
+async function createGame() {
+  for (let tries = 0; tries < 5; tries++) {
+    const c = newCode();
+    try {
+      const r = await fetch(`${DB}/games/${c}/c.json`); const v = await r.json();
+      if (v !== null) continue;
+      const put = await fetch(`${DB}/games/${c}.json`, { method: 'PUT', body: JSON.stringify({ c: { '.sv': 'timestamp' }, ep: 1, pl: { [me.pid]: { n: me.name, j: { '.sv': 'timestamp' } } } }) });
+      if (!put.ok) throw new Error('HTTP ' + put.status);
+      location.hash = c; return;
+    } catch (e) { toast("Couldn't reach the game database. Check your connection."); return; }
+  }
+  toast('Try again.');
+}
+const actions = {
+  home() { editingName = false; if (code) { location.hash = ''; code = null; connect(); } else render(); },
+  create: createGame,
+  copy() {
+    const u = shareUrl();
+    (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('Link copied.'), () => { const r = document.createRange(); r.selectNodeContents($('#link')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
+  },
+  start() {
+    const sel = document.querySelector('input[name="first"]:checked');
+    write('PATCH', rPath(1), { dz: sel ? sel.value : me.pid });
+  },
+  collect() {
+    const R = S.R; const real = R.real.trim(); if (!real) return;
+    const items = Object.entries(S.sb).filter(([p, t]) => p !== R.dz && typeof t === 'string' && t.trim()).map(([p, t]) => ({ t: t.trim().slice(0, MAXLEN), p }));
+    items.push({ t: real, p: '*' });
+    const en = {}; shuffle(items).forEach((x, i) => { en[rid(5)] = { t: x.t, p: x.p, i }; });
+    write('PATCH', rPath(S.n), { ph: 'review', en, ok: null });
+  },
+  backWrite() { write('PATCH', rPath(S.n), { ph: 'write', en: null, ok: null }); },
+  ok(b) { const p = b.dataset.pid; write('PUT', `${rPath(S.n)}/ok/${p}`, S.R.ok[p] ? null : true); },
+  openVote() { write('PATCH', rPath(S.n), { ph: 'vote' }); },
+  reveal() {
+    const ids = new Set(voteable(S.R).map(e => e.id)); const vt = {};
+    for (const [p, e] of Object.entries(S.vo)) if (ids.has(e) && !S.R.ok[p] && p !== S.R.dz && ownEntry(S.R, p) !== e) vt[p] = e;
+    write('PATCH', rPath(S.n), { ph: 'reveal', vt: Object.keys(vt).length ? vt : null });
+  },
+  next() { write('PATCH', rPath(S.n + 1), { dz: nextDasher(S.R.dz) }); },
+  skip() { write('PATCH', rPath(S.n + 1), { dz: nextDasher(S.R ? S.R.dz : me.pid) }); },
+  mkDasher(b) { write('PUT', rPath(S.n), { dz: b.dataset.pid }); },
+  adj(b) { const p = b.dataset.pid; const cur = typeof S.adj[p] === 'number' ? S.adj[p] : 0; write('PUT', `${base()}/adj/${p}`, cur + Number(b.dataset.n) || null); },
+  remove(b) { write('DELETE', `pl/${b.dataset.pid}`); },
+  newGame() {
+    if (!confirmNew) { confirmNew = true; render(); setTimeout(() => { confirmNew = false; render(); }, 4000); return; }
+    confirmNew = false; write('PUT', 'ep', S.ep + 1); toast('New game. Scores are back to zero.');
+  },
+  tools() { toolsOpen = !toolsOpen; render(); },
+  submitBluff() {
+    const t = ($('#bluff') ? $('#bluff').value : '').trim().slice(0, MAXLEN);
+    if (!t) { toast('Write something first.'); return; }
+    editingBluff = false; write('PUT', `${base()}/sb/${rk(S.n)}/${me.pid}`, t);
+  },
+  editBluff() { editingBluff = true; render(); setTimeout(() => { const t = $('#bluff'); if (t) t.focus(); }, 0); },
+  vote(b) { write('PUT', `${base()}/vo/${rk(S.n)}/${me.pid}`, b.dataset.e); },
+  rename() { editingName = true; render(); setTimeout(() => { const i = $('#nameIn'); if (i) i.focus(); }, 0); },
+};
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  const fn = actions[b.dataset.act]; if (fn) { e.preventDefault(); fn(b); }
+});
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  const id = e.target.id;
+  if (id === 'nameForm') {
+    const n = ($('#nameIn').value || '').trim().slice(0, NAMELEN);
+    if (!n) { toast('Enter a name so others know who you are.'); return; }
+    const was = me.name; me.name = n; LS.set('bd.me', me); editingName = false; keepAwake();
+    if (code && tree && tree.c) { if (was !== n || !(tree.pl && tree.pl[me.pid])) write('PATCH', `pl/${me.pid}`, { n, j: (tree.pl && tree.pl[me.pid] && tree.pl[me.pid].j) || { '.sv': 'timestamp' } }); beat(); }
+    render();
+  } else if (id === 'codeForm') {
+    const c = ($('#codeIn').value || '').trim().toUpperCase();
+    if (!/^[A-Z]{4}$/.test(c)) { toast('Game codes are 4 letters.'); return; }
+    location.hash = c;
+  } else if (id === 'setupForm') {
+    const w = $('#sWord').value.trim().slice(0, 80);
+    if (!w) { toast('Type what is on the card first.'); return; }
+    const cat = (document.querySelector('input[name="cat"]:checked') || {}).value || 'word';
+    write('PATCH', rPath(S.n), { ph: 'write', cat, w, real: $('#sReal').value.trim().slice(0, MAXLEN) });
+    LS.set('bd.dsetup', { cat: 'word', w: '', real: '' }); keepAwake();
+  }
+});
+let dT = null, pendingD = {};
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'bluff') { LS.set('bd.draft', { k: code + S.ep + ':' + S.n, t: t.value }); const c = $('#bluffCount'); if (c) c.textContent = t.value.length + '/' + MAXLEN; }
+  else if (t.id === 'codeIn') { t.value = t.value.toUpperCase().replace(/[^A-Z]/g, ''); }
+  else if (t.id === 'sWord' || t.id === 'sReal') { const d = LS.get('bd.dsetup', { cat: 'word', w: '', real: '' }); d[t.id === 'sWord' ? 'w' : 'real'] = t.value; LS.set('bd.dsetup', d); }
+  else if (t.id === 'dWord' || t.id === 'dReal') {
+    if (t.id === 'dWord') pendingD.w = t.value.slice(0, 80); else { pendingD.real = t.value.slice(0, MAXLEN); const c = $('#dRealCount'); if (c) c.textContent = t.value.length + '/' + MAXLEN; }
+    clearTimeout(dT); const n = S.n; dT = setTimeout(() => { const p = pendingD; pendingD = {}; if (S.n === n) write('PATCH', rPath(n), p); }, 400);
+  }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.name === 'first') firstSel = t.value;
+  if (t.name === 'cat') {
+    if (S.R && S.R.dz === me.pid && S.R.ph === 'write') write('PATCH', rPath(S.n), { cat: t.value });
+    else { const d = LS.get('bd.dsetup', { cat: 'word', w: '', real: '' }); d.cat = t.value; LS.set('bd.dsetup', d);
+      const c = CATS[t.value] || CATS.word; const w = $('#sWord'), r = $('#sReal'); if (w) w.placeholder = c.ph; if (r) r.placeholder = c.real; }
+  }
+});
+
+/* ---------- keep the screen on ---------- */
+let wake = null;
+async function keepAwake() { try { if ('wakeLock' in navigator && !wake && document.visibilityState === 'visible') { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch {} }
+
+if (DB.includes('YOUR-DATABASE')) { $('#main').innerHTML = '<section class="card"><h2 class="big-note">Not set up yet.</h2><p>This copy has no database address.</p></section>'; return; }
+connect();
+render();
+})();
+</script>
+</body>
+</html>
